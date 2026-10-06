@@ -22,8 +22,17 @@ jobs:
 
       - name: Install SDK components
         run: |
-          ANDROID_SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          SM="$(find "$ANDROID_SDK/cmdline-tools" -maxdepth 2 -name sdkmanager | sort | tail -1)"
+          ANDROID_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SM="$(command -v sdkmanager || true)"
+          if [ -z "$SM" ]; then
+            SM="$(find "$ANDROID_SDK" -maxdepth 5 -name sdkmanager -type f 2>/dev/null | sort | tail -1)"
+          fi
+          if [ -z "$SM" ]; then
+            echo "sdkmanager not found; SDK dir listing:"
+            ls -la "$ANDROID_SDK" 2>/dev/null || echo "SDK dir missing: $ANDROID_SDK"
+            ls -laR "$ANDROID_SDK/cmdline-tools" 2>/dev/null || true
+            exit 1
+          fi
           echo "Using sdkmanager: $SM"
           echo "$(dirname "$SM")" >> "$GITHUB_PATH"
           export PATH="$(dirname "$SM"):$PATH"
